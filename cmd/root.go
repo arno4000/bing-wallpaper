@@ -16,10 +16,12 @@ limitations under the License.
 package cmd
 
 import (
-	"bing-wallpaper/cmd/pkg/wallpaper"
+	"bing-wallpaper/pkg/wallpaper"
 	"fmt"
 	"os"
 
+	"github.com/kbinani/screenshot"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/spf13/viper"
@@ -53,6 +55,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.bing-wallpaper.yaml)")
+	rootCmd.PersistentFlags().IntP("daysback", "d", 0, "Number of days in the past to get the wallpaper from")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -84,5 +87,14 @@ func initConfig() {
 }
 
 func runRoot(c *cobra.Command, args []string) {
-	wallpaper.SetWallpaper()
+	bounds := screenshot.GetDisplayBounds(0)
+	daysBack, err := c.Flags().GetInt("daysback")
+	if err != nil {
+		logrus.Errorln(err)
+	}
+	wallpaperPath, err := wallpaper.GetWallpaper(fmt.Sprint(bounds.Dx()), fmt.Sprint(bounds.Dy()), daysBack, "")
+	if err != nil {
+		logrus.Errorln(err)
+	}
+	wallpaper.SetWallpaper(wallpaperPath)
 }

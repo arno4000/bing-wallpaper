@@ -4,12 +4,20 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
 
-func GetWallpaper(resolutionWidth string, resolutionHeight string, date string) (string, error) {
+func GetWallpaper(resolutionWidth string, resolutionHeight string, daysBack int, path string) (string, error) {
+	if daysBack > 7 {
+		logrus.Fatalln("Only 7 Days back are supported by the API!")
+	}
+	if daysBack < 0 {
+		logrus.Fatalln("Number must be Between 0 and 7")
+	}
 	url := "https://bingwallpaper.microsoft.com/api/BWC/getHPImages?screenWidth=" + resolutionWidth + "&screenHeight=" + resolutionHeight + "&env=live"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -29,7 +37,7 @@ func GetWallpaper(resolutionWidth string, resolutionHeight string, date string) 
 	if err != nil {
 		logrus.Errorln(err)
 	}
-	imageURL := wallpaper.Images[0].URL
+	imageURL := wallpaper.Images[daysBack].URL
 	req, err = http.NewRequest("GET", imageURL, nil)
 	if err != nil {
 		logrus.Errorln(err)
@@ -43,15 +51,26 @@ func GetWallpaper(resolutionWidth string, resolutionHeight string, date string) 
 		logrus.Errorln(err)
 	}
 	defer res.Body.Close()
-	var imagePath string
-	if runtime.GOOS == "windows" {
-		imagePath = /*os.Getenv("TEMP") + "\\*/ "wallpaper.jpg"
-	} else if runtime.GOOS == "linux" {
-		imagePath = "/tmp/wallpaper.jpg"
-	} else {
-		logrus.Fatalln(runtime.GOOS, "is currently not supported")
+	if path == "" {
+		if runtime.GOOS == "windows" {
+			path = os.Getenv("TEMP") + `\`
+		} else if runtime.GOOS == "linux" {
+			path = "/tmp/"
+		} else {
+			logrus.Fatalln(runtime.GOOS, "is currently not supported")
+		}
 	}
-	ioutil.WriteFile(imagePath, image, 0777)
-	return imagePath, err
+	if runtime.GOOS == "windows" {
+		if !strings.HasSuffix(path, `\`) {
+			path = path + `\`
+		}
+	} else {
+		if !strings.HasSuffix(path, "/") {
+			path = path + "/"
+		}
+	}
+	err = ioutil.WriteFile(path+"wallpaper.jpg", image, 0777)
+	path = path + "wallpaper.jpg"
+	return path, err
 
 }
