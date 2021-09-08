@@ -51,7 +51,7 @@ func runDownload(c *cobra.Command, args []string) {
 		logrus.Errorln(err)
 	}
 	bounds := screenshot.GetDisplayBounds(0)
-	_, err = wallpaper.GetWallpaper(fmt.Sprint(bounds.Dx()), fmt.Sprint(bounds.Dy()), daysBack, args[0])
+	_, _, err = wallpaper.GetWallpaper(fmt.Sprint(bounds.Dx()), fmt.Sprint(bounds.Dy()), daysBack, args[0], true)
 	if err != nil {
 		logrus.Errorln(err)
 	}

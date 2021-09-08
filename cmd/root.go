@@ -18,12 +18,16 @@ package cmd
 import (
 	"bing-wallpaper/pkg/wallpaper"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/kbinani/screenshot"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 
+	wallpaperLib "github.com/reujab/wallpaper"
 	"github.com/spf13/viper"
 )
 
@@ -76,9 +80,25 @@ func initConfig() {
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
 		viper.SetConfigName(".bing-wallpaper")
+		configName := os.Getenv("HOME") + "/.bing-wallpaper.yaml"
+		if _, err := os.Stat(configName); os.IsNotExist(err) {
+			var config wallpaper.Config
+			config = wallpaper.Config{
+				Daemon: true,
+			}
+			b, err := yaml.Marshal(config)
+			if err != nil {
+				logrus.Errorln(err)
+			}
+			err = ioutil.WriteFile(configName, b, 0755)
+			if err != nil {
+				logrus.Errorln(err)
+			}
+		}
+
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
+	viper.AutomaticEnv() // d in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
@@ -92,9 +112,17 @@ func runRoot(c *cobra.Command, args []string) {
 	if err != nil {
 		logrus.Errorln(err)
 	}
-	wallpaperPath, err := wallpaper.GetWallpaper(fmt.Sprint(bounds.Dx()), fmt.Sprint(bounds.Dy()), daysBack, "")
+	wallpaper.AutoUpdateConfig = viper.Get("daemon").(bool)
+	wallpaperPath, wallpaperStruct, err := wallpaper.GetWallpaper(fmt.Sprint(bounds.Dx()), fmt.Sprint(bounds.Dy()), daysBack, "", true)
 	if err != nil {
 		logrus.Errorln(err)
 	}
-	wallpaper.SetWallpaper(wallpaperPath)
+	currentWallpaper, err := wallpaperLib.Get()
+	if err != nil {
+		logrus.Errorln(err)
+	}
+	fmt.Println(currentWallpaper)
+	if strings.Contains(currentWallpaper, wallpaperStruct.Images[1].Startdate) {
+		wallpaper.SetWallpaper(wallpaperPath)
+	}
 }

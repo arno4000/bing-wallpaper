@@ -27,3 +27,7 @@ type Wallpaper struct {
 		Walls    string `json:"walls"`
 	} `json:"tooltips"`
 }
+
+type Config struct {
+	Daemon bool
+}
