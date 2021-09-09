@@ -13,7 +13,6 @@ import (
 )
 
 var AutoUpdate bool
-var AutoUpdateConfig bool
 
 func Systray() {
 	systray.Run(onReady, onExit)
@@ -22,15 +21,17 @@ func Systray() {
 func onReady() {
 	bounds := screenshot.GetDisplayBounds(0)
 	_, wallpaper, err := GetWallpaper(fmt.Sprint(bounds.Dx()), fmt.Sprint(bounds.Dy()), 0, "", false)
-	icon, err := os.ReadFile("logo.png")
 	if err != nil {
 		logrus.Errorln(err)
 	}
-	systray.SetIcon(icon)
+	// icon, err := os.ReadFile("logo.png")
+	// if err != nil {
+	// 	logrus.Errorln(err)
+	// }
+	systray.SetIcon(Logo)
 	mChooseWallpaper := systray.AddMenuItem("Choose wallpaper", "Choose a wallpaper of the last 7 days")
-	mAutoMode := systray.AddMenuItemCheckbox("Always use newest wallpaper", "", AutoUpdateConfig)
-	AutoUpdate = mAutoMode.Checked()
-
+	mAutoMode := systray.AddMenuItemCheckbox("Always use newest wallpaper", "", AutoUpdate)
+	mQuit := systray.AddMenuItem("Quit", "")
 	mWallpaper0 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[0].Title, "")
 	mWallpaper1 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[1].Title, "")
 	mWallpaper2 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[2].Title, "")
@@ -60,11 +61,15 @@ func onReady() {
 		case <-mAutoMode.ClickedCh:
 			var config Config
 			configName := os.Getenv("HOME") + "/.bing-wallpaper.yaml"
-			config = Config{
-				Daemon: AutoUpdate,
+			var changeAutoUpdate bool
+			if AutoUpdate {
+				changeAutoUpdate = false
+			} else {
+				changeAutoUpdate = true
 			}
-			fmt.Println(config)
-			fmt.Println(mAutoMode.Checked())
+			config = Config{
+				Auto_Update: changeAutoUpdate,
+			}
 			b, err := yaml.Marshal(config)
 			if err != nil {
 				logrus.Errorln(err)
@@ -73,12 +78,14 @@ func onReady() {
 			if err != nil {
 				logrus.Errorln(err)
 			}
+		case <-mQuit.ClickedCh:
+			systray.Quit()
 		}
 	}
 }
 
 func onExit() {
-	fmt.Println("KEKBye")
+	os.Exit(0)
 }
 
 func setbackground(daysback int, bounds image.Rectangle) {
@@ -86,6 +93,5 @@ func setbackground(daysback int, bounds image.Rectangle) {
 	if err != nil {
 		logrus.Errorln(err)
 	}
-	fmt.Println(wallpaperImage)
 	SetWallpaper(wallpaperImage)
 }

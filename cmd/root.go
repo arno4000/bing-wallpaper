@@ -20,14 +20,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 
 	"github.com/kbinani/screenshot"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
-	wallpaperLib "github.com/reujab/wallpaper"
 	"github.com/spf13/viper"
 )
 
@@ -60,6 +58,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.bing-wallpaper.yaml)")
 	rootCmd.PersistentFlags().IntP("daysback", "d", 0, "Number of days in the past to get the wallpaper from")
+	rootCmd.PersistentFlags().Bool("daemon", false, "Run in daemon mode")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -84,7 +83,7 @@ func initConfig() {
 		if _, err := os.Stat(configName); os.IsNotExist(err) {
 			var config wallpaper.Config
 			config = wallpaper.Config{
-				Daemon: true,
+				Auto_Update: true,
 			}
 			b, err := yaml.Marshal(config)
 			if err != nil {
@@ -102,7 +101,9 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		if err != nil {
+			logrus.Errorln(err)
+		}
 	}
 }
 
@@ -112,17 +113,19 @@ func runRoot(c *cobra.Command, args []string) {
 	if err != nil {
 		logrus.Errorln(err)
 	}
-	wallpaper.AutoUpdateConfig = viper.Get("daemon").(bool)
-	wallpaperPath, wallpaperStruct, err := wallpaper.GetWallpaper(fmt.Sprint(bounds.Dx()), fmt.Sprint(bounds.Dy()), daysBack, "", true)
+	runDaemon, err := c.Flags().GetBool("daemon")
 	if err != nil {
 		logrus.Errorln(err)
 	}
-	currentWallpaper, err := wallpaperLib.Get()
+	wallpaper.AutoUpdate = viper.Get("auto_update").(bool)
+	wallpaperPath, _, err := wallpaper.GetWallpaper(fmt.Sprint(bounds.Dx()), fmt.Sprint(bounds.Dy()), daysBack, "", true)
 	if err != nil {
 		logrus.Errorln(err)
 	}
-	fmt.Println(currentWallpaper)
-	if strings.Contains(currentWallpaper, wallpaperStruct.Images[1].Startdate) {
+	if wallpaper.AutoUpdate || daysBack > 0 {
 		wallpaper.SetWallpaper(wallpaperPath)
+	}
+	if runDaemon {
+		wallpaper.Systray()
 	}
 }

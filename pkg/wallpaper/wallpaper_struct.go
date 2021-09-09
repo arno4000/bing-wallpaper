@@ -29,5 +29,5 @@ type Wallpaper struct {
 }
 
 type Config struct {
-	Daemon bool
+	Auto_Update bool
 }

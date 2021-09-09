@@ -15,12 +15,8 @@ limitations under the License.
 */
 package main
 
-import (
-	"bing-wallpaper/cmd"
-	"bing-wallpaper/pkg/wallpaper"
-)
+import "bing-wallpaper/cmd"
 
 func main() {
 	cmd.Execute()
-	wallpaper.Systray()
 }
