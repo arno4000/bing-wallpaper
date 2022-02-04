@@ -67,7 +67,8 @@ ExecStart=` + installLocation + `/` + exeName + ` --daemon
 Restart=on-failure
 RestartSec=3
 [Install]
-WantedBy=multi-user.target`
+WantedBy=default.target`
+
 	if _, err := os.Stat(home); os.IsNotExist(err) {
 		logrus.Warnln(installLocation, "does not exist, creating it. Please make shure that it is in the PATH variable")
 		err = os.Mkdir(installLocation, 0777)
