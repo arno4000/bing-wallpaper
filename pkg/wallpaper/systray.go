@@ -36,7 +36,7 @@ func onReady() {
 	mWallpaper7 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[7].Title, "")
 
 	c := cron.New()
-	c.AddFunc("*/10 * * * *", func() {
+	c.AddFunc("0 */10 * * * *", func() {
 		_, wallpaper, err = GetWallpaper(fmt.Sprint(bounds.Dx()), fmt.Sprint(bounds.Dy()), 0, "", false)
 		if err != nil {
 			logrus.Errorln(err)
