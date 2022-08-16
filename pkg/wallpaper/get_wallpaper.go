@@ -56,7 +56,7 @@ func GetWallpaper(resolutionWidth string, resolutionHeight string, daysBack int,
 			if runtime.GOOS == "windows" {
 				path = os.Getenv("TEMP") + `\`
 			} else if runtime.GOOS == "linux" {
-				path = "/tmp/"
+				path = os.Getenv("HOME") + "/.cache"
 			} else {
 				logrus.Fatalln(runtime.GOOS, "is currently not supported")
 			}
