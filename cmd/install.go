@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -42,8 +42,8 @@ func init() {
 }
 
 func runInstall(c *cobra.Command, args []string) {
-	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
-		logrus.Fatalln("HAHA USE LINUX, DONT USE", runtime.GOOS, "KEKW")
+	if runtime.GOOS == "windows" {
+		logrus.Fatalln("HAHA USE LINUX OR DARWIN, DONT USE", runtime.GOOS, "KEKW")
 	}
 	path := os.Getenv("PATH")
 	home := os.Getenv("HOME")
@@ -68,6 +68,22 @@ Restart=on-failure
 RestartSec=3
 [Install]
 WantedBy=default.target`
+
+	launchAgent := `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>Label</key>
+		<string>com.github.bing-wallapaper</string>
+		<key>ProgramArguments</key>
+		<array>
+			<string>/Users/arno/.local/bin/bing-wallpaper</string>
+			<string>--daemon</string>
+		</array>
+		<key>RunAtLoad</key>
+		<true/>
+	</dict>
+</plist>`
 
 	if _, err := os.Stat(home); os.IsNotExist(err) {
 		logrus.Warnln(installLocation, "does not exist, creating it. Please make shure that it is in the PATH variable")
@@ -98,13 +114,22 @@ WantedBy=default.target`
 	if err != nil {
 		logrus.Errorln(err)
 	}
-	err = ioutil.WriteFile(home+"/.config/systemd/user/bing-wallpaper.service", []byte(systemDService), 0644)
-	if err != nil {
-		logrus.Errorln(err)
+	if runtime.GOOS == "linux" {
+		err = ioutil.WriteFile(home+"/.config/systemd/user/bing-wallpaper.service", []byte(systemDService), 0644)
+		if err != nil {
+			logrus.Errorln(err)
+		}
+		cmd := exec.Command("systemctl --user daemon-reload")
+		cmd.Run()
+		cmd = exec.Command("systemctl start --user bing-wallpaper.service")
+		cmd.Run()
+	} else if runtime.GOOS == "darwin" {
+		err = ioutil.WriteFile(home+"/Library/LaunchAgents/com.github.bing-wallpaper.plist", []byte(launchAgent), 0644)
+		if err != nil {
+			logrus.Errorln(err)
+		}
+		cmd := exec.Command("launchctl load " + home + " /Library/LaunchAgents/com.github.bing-wallpaper.plist")
+		cmd.Run()
 	}
-	cmd := exec.Command("systemctl --user daemon-reload")
-	cmd.Run()
-	cmd = exec.Command("systemctl start --user bing-wallpaper.service")
-	cmd.Run()
 
 }
