@@ -1,5 +1,6 @@
 package wallpaper
 
+
 import (
 	"fmt"
 	"image"
@@ -26,14 +27,10 @@ func onReady() {
 	systray.SetIcon(Logo)
 	mChooseWallpaper := systray.AddMenuItem("Choose wallpaper", "Choose a wallpaper of the last 7 days")
 	mQuit := systray.AddMenuItem("Quit", "")
-	mWallpaper0 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[0].Title, "")
-	mWallpaper1 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[1].Title, "")
-	mWallpaper2 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[2].Title, "")
-	mWallpaper3 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[3].Title, "")
-	mWallpaper4 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[4].Title, "")
-	mWallpaper5 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[5].Title, "")
-	mWallpaper6 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[6].Title, "")
-	mWallpaper7 := mChooseWallpaper.AddSubMenuItem(wallpaper.Images[7].Title, "")
+	mWallpapers := make([]*systray.MenuItem, 8)
+	for i := 0; i < 8; i++ {
+		mWallpapers[i] = mChooseWallpaper.AddSubMenuItem(wallpaper.Images[i].Title, "")
+	}
 
 	c := cron.New()
 	c.AddFunc("0 */10 * * * *", func() {
@@ -41,43 +38,29 @@ func onReady() {
 		if err != nil {
 			logrus.Errorln(err)
 		}
-		mWallpaper0.SetTitle(wallpaper.Images[0].Title)
-		mWallpaper1.SetTitle(wallpaper.Images[1].Title)
-		mWallpaper2.SetTitle(wallpaper.Images[2].Title)
-		mWallpaper3.SetTitle(wallpaper.Images[3].Title)
-		mWallpaper4.SetTitle(wallpaper.Images[4].Title)
-		mWallpaper5.SetTitle(wallpaper.Images[5].Title)
-		mWallpaper6.SetTitle(wallpaper.Images[6].Title)
-		mWallpaper7.SetTitle(wallpaper.Images[7].Title)
+		for i := 0; i < 8; i++ {
+			mWallpapers[i].SetTitle(wallpaper.Images[i].Title)
+		}
 		if AutoUpdate {
 			setbackground(0, bounds)
 		}
 	})
 	c.Start()
 
-	for {
-		select {
-		case <-mWallpaper0.ClickedCh:
-			setbackground(0, bounds)
-		case <-mWallpaper1.ClickedCh:
-			setbackground(1, bounds)
-		case <-mWallpaper2.ClickedCh:
-			setbackground(2, bounds)
-		case <-mWallpaper3.ClickedCh:
-			setbackground(3, bounds)
-		case <-mWallpaper4.ClickedCh:
-			setbackground(4, bounds)
-		case <-mWallpaper5.ClickedCh:
-			setbackground(5, bounds)
-		case <-mWallpaper6.ClickedCh:
-			setbackground(6, bounds)
-		case <-mWallpaper7.ClickedCh:
-			setbackground(7, bounds)
-		case <-mQuit.ClickedCh:
-			systray.Quit()
-
-		}
+	for i := 0; i < 8; i++ {
+		index := i
+		go func() {
+			for {
+				select {
+				case <-mWallpapers[index].ClickedCh:
+					setbackground(index, bounds)
+				}
+			}
+		}()
 	}
+
+	<-mQuit.ClickedCh
+	systray.Quit()
 }
 
 func onExit() {
